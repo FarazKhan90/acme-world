@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-todos-table
+      author: acme-team
+      changes:
+        - createTable:
+            tableName: todos
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: completed
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: priority
+                  type: VARCHAR(20)
+                  defaultValue: 'MEDIUM'
+              - column:
+                  name: due_date
+                  type: DATE
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: todos
+            baseColumnNames: user_id
+            constraintName: fk_todos_user
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            tableName: todos
+            indexName: idx_todos_user_id
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            tableName: todos
+            indexName: idx_todos_completed
+            columns:
+              - column:
+                  name: completed
+        - sql:
+            sql: ALTER TABLE todos ADD CONSTRAINT chk_todos_priority CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH'))

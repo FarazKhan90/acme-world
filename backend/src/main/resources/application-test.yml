@@ -1,0 +1,8 @@
+spring:
+  liquibase:
+    contexts: test
+
+logging:
+  level:
+    com.acme.todo: DEBUG
+    org.testcontainers: INFO

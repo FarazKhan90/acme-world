@@ -1,0 +1,169 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-insert-sample-data
+      author: acme-team
+      context: "!test"
+      comment: "Sample data for development - passwords are 'password123' hashed with BCrypt"
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: john.doe
+              - column:
+                  name: email
+                  value: john.doe@example.com
+              - column:
+                  name: password_hash
+                  value: $2a$10$N9qo8uLOickgx2ZMRZoMyeqk3/HZhDD4fI4y1rQnT6sDnXLvwOKDO
+              - column:
+                  name: first_name
+                  value: John
+              - column:
+                  name: last_name
+                  value: Doe
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: jane.smith
+              - column:
+                  name: email
+                  value: jane.smith@example.com
+              - column:
+                  name: password_hash
+                  value: $2a$10$N9qo8uLOickgx2ZMRZoMyeqk3/HZhDD4fI4y1rQnT6sDnXLvwOKDO
+              - column:
+                  name: first_name
+                  value: Jane
+              - column:
+                  name: last_name
+                  value: Smith
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: todos
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: Complete project documentation
+              - column:
+                  name: description
+                  value: Write comprehensive API documentation including all endpoints and examples
+              - column:
+                  name: completed
+                  valueBoolean: false
+              - column:
+                  name: priority
+                  value: HIGH
+              - column:
+                  name: due_date
+                  valueDate: 2026-01-30
+        - insert:
+            tableName: todos
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: Review pull requests
+              - column:
+                  name: description
+                  value: Review and approve pending PRs from the team
+              - column:
+                  name: completed
+                  valueBoolean: true
+              - column:
+                  name: priority
+                  value: MEDIUM
+              - column:
+                  name: due_date
+                  valueDate: 2026-01-14
+        - insert:
+            tableName: todos
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: Setup CI/CD pipeline
+              - column:
+                  name: description
+                  value: Configure GitHub Actions for automated testing and deployment
+              - column:
+                  name: completed
+                  valueBoolean: false
+              - column:
+                  name: priority
+                  value: HIGH
+              - column:
+                  name: due_date
+                  valueDate: 2026-02-01
+        - insert:
+            tableName: todos
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: title
+                  value: Buy groceries
+              - column:
+                  name: description
+                  value: Milk, bread, eggs, vegetables
+              - column:
+                  name: completed
+                  valueBoolean: false
+              - column:
+                  name: priority
+                  value: LOW
+        - insert:
+            tableName: todos
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 2
+              - column:
+                  name: title
+                  value: Prepare quarterly report
+              - column:
+                  name: description
+                  value: Compile Q4 metrics and prepare presentation
+              - column:
+                  name: completed
+                  valueBoolean: false
+              - column:
+                  name: priority
+                  value: HIGH
+              - column:
+                  name: due_date
+                  valueDate: 2026-01-25
+        - insert:
+            tableName: todos
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 2
+              - column:
+                  name: title
+                  value: Team standup meeting
+              - column:
+                  name: description
+                  value: Weekly sync with the development team
+              - column:
+                  name: completed
+                  valueBoolean: true
+              - column:
+                  name: priority
+                  value: MEDIUM
