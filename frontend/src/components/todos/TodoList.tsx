@@ -2,12 +2,27 @@ import { useState } from 'react';
 import { useTodos } from '../../hooks/useTodos';
 import TodoItem from './TodoItem';
 import TodoForm from './TodoForm';
+import TodoHistory from './TodoHistory';
+import Modal from '../common/Modal';
+import { Todo } from '../../types/todo';
 
 type FilterType = 'all' | 'active' | 'completed';
 
 export default function TodoList() {
   const { todos, isLoading, error, createTodo, updateTodo, toggleTodo, deleteTodo } = useTodos();
   const [filter, setFilter] = useState<FilterType>('all');
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  const handleHistoryClick = (todo: Todo) => {
+    setSelectedTodo(todo);
+    setIsHistoryModalOpen(true);
+  };
+
+  const handleCloseHistoryModal = () => {
+    setIsHistoryModalOpen(false);
+    setSelectedTodo(null);
+  };
 
   const filteredTodos = todos.filter((todo) => {
     if (filter === 'active') return !todo.completed;
@@ -63,6 +78,7 @@ export default function TodoList() {
               onToggle={() => toggleTodo(todo.id)}
               onUpdate={(data) => updateTodo(todo.id, data)}
               onDelete={() => deleteTodo(todo.id)}
+              onHistoryClick={() => handleHistoryClick(todo)}
             />
           ))
         )}
@@ -71,6 +87,16 @@ export default function TodoList() {
       <div className="todo-stats">
         {activeTodosCount} item{activeTodosCount !== 1 ? 's' : ''} left
       </div>
+
+      <Modal
+        isOpen={isHistoryModalOpen}
+        onClose={handleCloseHistoryModal}
+        title="Todo History"
+      >
+        {selectedTodo && (
+          <TodoHistory todoId={selectedTodo.id} todoTitle={selectedTodo.title} />
+        )}
+      </Modal>
     </div>
   );
 }

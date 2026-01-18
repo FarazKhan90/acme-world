@@ -13,7 +13,9 @@
       "Bash(mvn clean test:*)",
       "Bash(mvn help:effective-pom:*)",
       "WebFetch(domain:acme-world.atlassian.net)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)"
     ]
   }
 }
