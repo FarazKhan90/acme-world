@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/003-insert-sample-data.yaml
   - include:
       file: db/changelog/changes/004-add-deleted-at-to-todos.yaml
+  - include:
+      file: db/changelog/changes/005-create-audit-log-table.yaml

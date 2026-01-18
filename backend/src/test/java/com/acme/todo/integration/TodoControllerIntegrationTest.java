@@ -4,19 +4,28 @@ import com.acme.todo.dto.request.CreateTodoRequest;
 import com.acme.todo.dto.request.RegisterRequest;
 import com.acme.todo.dto.request.UpdateTodoRequest;
 import com.acme.todo.dto.response.TodoResponse;
+import com.acme.todo.entity.TodoAuditActionType;
+import com.acme.todo.entity.TodoAuditLog;
+import com.acme.todo.repository.TodoAuditLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
+import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class TodoControllerIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private TodoAuditLogRepository todoAuditLogRepository;
 
     private String authToken;
     private static final String TEST_USERNAME = "todouser";
@@ -378,5 +387,221 @@ class TodoControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Updated Title Only"))
                 .andExpect(jsonPath("$.description").value("Original Description"))
                 .andExpect(jsonPath("$.priority").value("HIGH"));
+    }
+
+    @Test
+    @DisplayName("Should create CREATED audit log entry when todo is created")
+    void shouldCreateAuditLogEntryOnTodoCreation() throws Exception {
+        CreateTodoRequest request = CreateTodoRequest.builder()
+                .title("Audited Todo Creation")
+                .description("This should be audited")
+                .priority("HIGH")
+                .dueDate(LocalDate.now().plusDays(7))
+                .build();
+
+        MvcResult createResult = mockMvc.perform(post(getBaseUrl() + "/todos")
+                        .header("Authorization", "Bearer " + authToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(request)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TodoResponse created = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                TodoResponse.class
+        );
+
+        // Verify audit log was created
+        List<TodoAuditLog> auditLogs = todoAuditLogRepository.findByTodoIdOrderByCreatedAtDesc(created.getId());
+        
+        assertThat(auditLogs).hasSize(1);
+        
+        TodoAuditLog auditLog = auditLogs.get(0);
+        assertThat(auditLog.getActionType()).isEqualTo(TodoAuditActionType.CREATED);
+        assertThat(auditLog.getCreatedBy()).isEqualTo(TEST_USERNAME);
+        assertThat(auditLog.getSnapshot()).isNotNull();
+        assertThat(auditLog.getSnapshot()).contains("Audited Todo Creation");
+        assertThat(auditLog.getSnapshot()).contains("This should be audited");
+        assertThat(auditLog.getSnapshot()).contains("HIGH");
+    }
+
+    @Test
+    @DisplayName("Should create UPDATED audit log entry when todo is updated")
+    void shouldCreateAuditLogEntryOnTodoUpdate() throws Exception {
+        // Create a todo first
+        CreateTodoRequest createRequest = CreateTodoRequest.builder()
+                .title("Original Title")
+                .description("Original Description")
+                .priority("LOW")
+                .build();
+
+        MvcResult createResult = mockMvc.perform(post(getBaseUrl() + "/todos")
+                        .header("Authorization", "Bearer " + authToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TodoResponse created = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                TodoResponse.class
+        );
+
+        // Update the todo
+        UpdateTodoRequest updateRequest = UpdateTodoRequest.builder()
+                .title("Updated Title")
+                .description("Updated Description")
+                .priority("HIGH")
+                .build();
+
+        mockMvc.perform(put(getBaseUrl() + "/todos/" + created.getId())
+                        .header("Authorization", "Bearer " + authToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(updateRequest)))
+                .andExpect(status().isOk());
+
+        // Verify audit logs (should have CREATED and UPDATED)
+        List<TodoAuditLog> auditLogs = todoAuditLogRepository.findByTodoIdOrderByCreatedAtDesc(created.getId());
+        
+        assertThat(auditLogs).hasSize(2);
+        
+        // Most recent should be UPDATED
+        TodoAuditLog updatedLog = auditLogs.get(0);
+        assertThat(updatedLog.getActionType()).isEqualTo(TodoAuditActionType.UPDATED);
+        assertThat(updatedLog.getCreatedBy()).isEqualTo(TEST_USERNAME);
+        assertThat(updatedLog.getSnapshot()).contains("Updated Title");
+        assertThat(updatedLog.getSnapshot()).contains("Updated Description");
+        assertThat(updatedLog.getSnapshot()).contains("HIGH");
+        
+        // Older one should be CREATED
+        TodoAuditLog createdLog = auditLogs.get(1);
+        assertThat(createdLog.getActionType()).isEqualTo(TodoAuditActionType.CREATED);
+    }
+
+    @Test
+    @DisplayName("Should create COMPLETED audit log entry when todo is toggled to complete")
+    void shouldCreateCompletedAuditLogEntryOnToggle() throws Exception {
+        // Create an incomplete todo
+        CreateTodoRequest createRequest = CreateTodoRequest.builder()
+                .title("Todo to Complete")
+                .build();
+
+        MvcResult createResult = mockMvc.perform(post(getBaseUrl() + "/todos")
+                        .header("Authorization", "Bearer " + authToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TodoResponse created = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                TodoResponse.class
+        );
+
+        // Toggle to complete
+        mockMvc.perform(patch(getBaseUrl() + "/todos/" + created.getId() + "/toggle")
+                        .header("Authorization", "Bearer " + authToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completed").value(true));
+
+        // Verify audit logs (should have CREATED and COMPLETED)
+        List<TodoAuditLog> auditLogs = todoAuditLogRepository.findByTodoIdOrderByCreatedAtDesc(created.getId());
+        
+        assertThat(auditLogs).hasSize(2);
+        
+        // Most recent should be COMPLETED
+        TodoAuditLog completedLog = auditLogs.get(0);
+        assertThat(completedLog.getActionType()).isEqualTo(TodoAuditActionType.COMPLETED);
+        assertThat(completedLog.getCreatedBy()).isEqualTo(TEST_USERNAME);
+        assertThat(completedLog.getSnapshot()).contains("true"); // completed status
+    }
+
+    @Test
+    @DisplayName("Should create UNCOMPLETED audit log entry when todo is toggled to incomplete")
+    void shouldCreateUncompletedAuditLogEntryOnToggle() throws Exception {
+        // Create a todo and toggle to complete first
+        CreateTodoRequest createRequest = CreateTodoRequest.builder()
+                .title("Todo to Uncomplete")
+                .build();
+
+        MvcResult createResult = mockMvc.perform(post(getBaseUrl() + "/todos")
+                        .header("Authorization", "Bearer " + authToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TodoResponse created = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                TodoResponse.class
+        );
+
+        // Toggle to complete first
+        mockMvc.perform(patch(getBaseUrl() + "/todos/" + created.getId() + "/toggle")
+                        .header("Authorization", "Bearer " + authToken))
+                .andExpect(status().isOk());
+
+        // Toggle back to incomplete
+        mockMvc.perform(patch(getBaseUrl() + "/todos/" + created.getId() + "/toggle")
+                        .header("Authorization", "Bearer " + authToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completed").value(false));
+
+        // Verify audit logs (should have CREATED, COMPLETED, and UNCOMPLETED)
+        List<TodoAuditLog> auditLogs = todoAuditLogRepository.findByTodoIdOrderByCreatedAtDesc(created.getId());
+        
+        assertThat(auditLogs).hasSize(3);
+        
+        // Most recent should be UNCOMPLETED
+        TodoAuditLog uncompletedLog = auditLogs.get(0);
+        assertThat(uncompletedLog.getActionType()).isEqualTo(TodoAuditActionType.UNCOMPLETED);
+        assertThat(uncompletedLog.getCreatedBy()).isEqualTo(TEST_USERNAME);
+        assertThat(uncompletedLog.getSnapshot()).contains("false"); // completed status
+    }
+
+    @Test
+    @DisplayName("Should create DELETED audit log entry when todo is deleted")
+    void shouldCreateDeletedAuditLogEntryOnDelete() throws Exception {
+        // Create a todo
+        CreateTodoRequest createRequest = CreateTodoRequest.builder()
+                .title("Todo to Delete")
+                .description("This will be deleted")
+                .priority("HIGH")
+                .build();
+
+        MvcResult createResult = mockMvc.perform(post(getBaseUrl() + "/todos")
+                        .header("Authorization", "Bearer " + authToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TodoResponse created = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                TodoResponse.class
+        );
+
+        // Delete the todo
+        mockMvc.perform(delete(getBaseUrl() + "/todos/" + created.getId())
+                        .header("Authorization", "Bearer " + authToken))
+                .andExpect(status().isNoContent());
+
+        // Verify audit logs (should have CREATED and DELETED)
+        List<TodoAuditLog> auditLogs = todoAuditLogRepository.findByTodoIdOrderByCreatedAtDesc(created.getId());
+        
+        assertThat(auditLogs).hasSize(2);
+        
+        // Most recent should be DELETED
+        TodoAuditLog deletedLog = auditLogs.get(0);
+        assertThat(deletedLog.getActionType()).isEqualTo(TodoAuditActionType.DELETED);
+        assertThat(deletedLog.getCreatedBy()).isEqualTo(TEST_USERNAME);
+        assertThat(deletedLog.getSnapshot()).contains("Todo to Delete");
+        assertThat(deletedLog.getSnapshot()).contains("This will be deleted");
+        assertThat(deletedLog.getSnapshot()).contains("HIGH");
+        
+        // Verify the todo is soft-deleted (not accessible via API)
+        mockMvc.perform(get(getBaseUrl() + "/todos/" + created.getId())
+                        .header("Authorization", "Bearer " + authToken))
+                .andExpect(status().isNotFound());
     }
 }

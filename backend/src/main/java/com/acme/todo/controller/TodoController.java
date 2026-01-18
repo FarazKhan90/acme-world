@@ -2,6 +2,7 @@ package com.acme.todo.controller;
 
 import com.acme.todo.dto.request.CreateTodoRequest;
 import com.acme.todo.dto.request.UpdateTodoRequest;
+import com.acme.todo.dto.response.TodoAuditLogResponse;
 import com.acme.todo.dto.response.TodoResponse;
 import com.acme.todo.service.TodoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,6 +43,16 @@ public class TodoController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long id) {
         return ResponseEntity.ok(todoService.getTodoById(userDetails.getUsername(), id));
+    }
+
+    @GetMapping("/{id}/history")
+    @Operation(summary = "Get audit history for a todo",
+               description = "Returns the complete audit trail for a todo, including all create, update, toggle, and delete actions. " +
+                            "History is available even for soft-deleted todos.")
+    public ResponseEntity<List<TodoAuditLogResponse>> getTodoHistory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(todoService.getTodoHistory(userDetails.getUsername(), id));
     }
 
     @PostMapping

@@ -5,17 +5,22 @@ import com.acme.todo.dto.request.UpdateTodoRequest;
 import com.acme.todo.dto.response.TodoResponse;
 import com.acme.todo.entity.Todo;
 import com.acme.todo.entity.Todo.Priority;
+import com.acme.todo.entity.TodoAuditActionType;
+import com.acme.todo.entity.TodoAuditLog;
 import com.acme.todo.entity.User;
 import com.acme.todo.exception.BadRequestException;
 import com.acme.todo.exception.ResourceNotFoundException;
+import com.acme.todo.repository.TodoAuditLogRepository;
 import com.acme.todo.repository.TodoRepository;
 import com.acme.todo.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,6 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,7 +44,11 @@ class TodoServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @InjectMocks
+    @Mock
+    private TodoAuditLogRepository todoAuditLogRepository;
+
+    private ObjectMapper objectMapper;
+
     private TodoService todoService;
 
     private User testUser;
@@ -46,6 +56,10 @@ class TodoServiceTest {
 
     @BeforeEach
     void setUp() {
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        todoService = new TodoService(todoRepository, userRepository, todoAuditLogRepository, objectMapper);
+
         testUser = User.builder()
                 .username("testuser")
                 .email("test@example.com")
@@ -75,52 +89,52 @@ class TodoServiceTest {
         @DisplayName("should return all todos for user without filters")
         void shouldReturnAllTodosWithoutFilters() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByUserIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(testTodo));
+            when(todoRepository.findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(1L)).thenReturn(List.of(testTodo));
 
             List<TodoResponse> result = todoService.getAllTodos("testuser", null, null);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getTitle()).isEqualTo("Test Todo");
-            verify(todoRepository).findByUserIdOrderByCreatedAtDesc(1L);
+            verify(todoRepository).findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(1L);
         }
 
         @Test
         @DisplayName("should filter by completed status")
         void shouldFilterByCompletedStatus() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByUserIdAndCompletedOrderByCreatedAtDesc(1L, false))
+            when(todoRepository.findByUserIdAndCompletedAndDeletedAtIsNullOrderByCreatedAtDesc(1L, false))
                     .thenReturn(List.of(testTodo));
 
             List<TodoResponse> result = todoService.getAllTodos("testuser", false, null);
 
             assertThat(result).hasSize(1);
-            verify(todoRepository).findByUserIdAndCompletedOrderByCreatedAtDesc(1L, false);
+            verify(todoRepository).findByUserIdAndCompletedAndDeletedAtIsNullOrderByCreatedAtDesc(1L, false);
         }
 
         @Test
         @DisplayName("should filter by priority")
         void shouldFilterByPriority() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByUserIdAndPriorityOrderByCreatedAtDesc(1L, Priority.HIGH))
+            when(todoRepository.findByUserIdAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(1L, Priority.HIGH))
                     .thenReturn(List.of());
 
             List<TodoResponse> result = todoService.getAllTodos("testuser", null, "HIGH");
 
             assertThat(result).isEmpty();
-            verify(todoRepository).findByUserIdAndPriorityOrderByCreatedAtDesc(1L, Priority.HIGH);
+            verify(todoRepository).findByUserIdAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(1L, Priority.HIGH);
         }
 
         @Test
         @DisplayName("should filter by both completed and priority")
         void shouldFilterByCompletedAndPriority() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByUserIdAndCompletedAndPriorityOrderByCreatedAtDesc(1L, true, Priority.LOW))
+            when(todoRepository.findByUserIdAndCompletedAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(1L, true, Priority.LOW))
                     .thenReturn(List.of());
 
             List<TodoResponse> result = todoService.getAllTodos("testuser", true, "LOW");
 
             assertThat(result).isEmpty();
-            verify(todoRepository).findByUserIdAndCompletedAndPriorityOrderByCreatedAtDesc(1L, true, Priority.LOW);
+            verify(todoRepository).findByUserIdAndCompletedAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(1L, true, Priority.LOW);
         }
 
         @Test
@@ -154,7 +168,7 @@ class TodoServiceTest {
         @DisplayName("should return todo by id")
         void shouldReturnTodoById() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
 
             TodoResponse result = todoService.getTodoById("testuser", 1L);
 
@@ -166,7 +180,7 @@ class TodoServiceTest {
         @DisplayName("should throw ResourceNotFoundException for non-existent todo")
         void shouldThrowForNonExistentTodo() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(999L, 1L)).thenReturn(Optional.empty());
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(999L, 1L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> todoService.getTodoById("testuser", 999L))
                     .isInstanceOf(ResourceNotFoundException.class)
@@ -262,6 +276,71 @@ class TodoServiceTest {
 
             assertThat(result.getPriority()).isEqualTo("HIGH");
         }
+
+        @Test
+        @DisplayName("should create audit log entry with CREATED action type")
+        void shouldCreateAuditLogOnCreate() {
+            CreateTodoRequest request = CreateTodoRequest.builder()
+                    .title("Audited Todo")
+                    .description("Description for audit")
+                    .priority("HIGH")
+                    .build();
+
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> {
+                Todo saved = invocation.getArgument(0);
+                saved.setId(2L);
+                saved.setCreatedAt(LocalDateTime.now());
+                saved.setUpdatedAt(LocalDateTime.now());
+                return saved;
+            });
+
+            todoService.createTodo("testuser", request);
+
+            ArgumentCaptor<TodoAuditLog> auditLogCaptor = ArgumentCaptor.forClass(TodoAuditLog.class);
+            verify(todoAuditLogRepository).save(auditLogCaptor.capture());
+
+            TodoAuditLog savedAuditLog = auditLogCaptor.getValue();
+            assertThat(savedAuditLog.getActionType()).isEqualTo(TodoAuditActionType.CREATED);
+            assertThat(savedAuditLog.getTodo().getId()).isEqualTo(2L);
+            assertThat(savedAuditLog.getUser()).isEqualTo(testUser);
+            assertThat(savedAuditLog.getCreatedBy()).isEqualTo("testuser");
+            assertThat(savedAuditLog.getSnapshot()).isNotNull();
+            assertThat(savedAuditLog.getSnapshot()).contains("Audited Todo");
+            assertThat(savedAuditLog.getSnapshot()).contains("HIGH");
+        }
+
+        @Test
+        @DisplayName("should include all todo fields in audit log snapshot")
+        void shouldIncludeAllFieldsInAuditLogSnapshot() {
+            LocalDate dueDate = LocalDate.now().plusDays(5);
+            CreateTodoRequest request = CreateTodoRequest.builder()
+                    .title("Complete Todo")
+                    .description("Full description")
+                    .priority("LOW")
+                    .dueDate(dueDate)
+                    .build();
+
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> {
+                Todo saved = invocation.getArgument(0);
+                saved.setId(3L);
+                saved.setCreatedAt(LocalDateTime.now());
+                saved.setUpdatedAt(LocalDateTime.now());
+                return saved;
+            });
+
+            todoService.createTodo("testuser", request);
+
+            ArgumentCaptor<TodoAuditLog> auditLogCaptor = ArgumentCaptor.forClass(TodoAuditLog.class);
+            verify(todoAuditLogRepository).save(auditLogCaptor.capture());
+
+            String snapshot = auditLogCaptor.getValue().getSnapshot();
+            assertThat(snapshot).contains("Complete Todo");
+            assertThat(snapshot).contains("Full description");
+            assertThat(snapshot).contains("LOW");
+            assertThat(snapshot).contains("false"); // completed status
+        }
     }
 
     @Nested
@@ -280,7 +359,7 @@ class TodoServiceTest {
                     .build();
 
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
             when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             TodoResponse result = todoService.updateTodo("testuser", 1L, request);
@@ -299,7 +378,7 @@ class TodoServiceTest {
                     .build();
 
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
             when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             TodoResponse result = todoService.updateTodo("testuser", 1L, request);
@@ -317,11 +396,38 @@ class TodoServiceTest {
                     .build();
 
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
 
             assertThatThrownBy(() -> todoService.updateTodo("testuser", 1L, request))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("Invalid priority");
+        }
+
+        @Test
+        @DisplayName("should create UPDATED audit log entry on update")
+        void shouldCreateUpdatedAuditLogEntryOnUpdate() throws Exception {
+            UpdateTodoRequest request = UpdateTodoRequest.builder()
+                    .title("Updated Title")
+                    .description("Updated Description")
+                    .build();
+
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            todoService.updateTodo("testuser", 1L, request);
+
+            ArgumentCaptor<TodoAuditLog> auditLogCaptor = ArgumentCaptor.forClass(TodoAuditLog.class);
+            verify(todoAuditLogRepository).save(auditLogCaptor.capture());
+
+            TodoAuditLog savedAuditLog = auditLogCaptor.getValue();
+            assertThat(savedAuditLog.getActionType()).isEqualTo(TodoAuditActionType.UPDATED);
+            assertThat(savedAuditLog.getCreatedBy()).isEqualTo("testuser");
+            assertThat(savedAuditLog.getTodo()).isEqualTo(testTodo);
+
+            String snapshot = savedAuditLog.getSnapshot();
+            assertThat(snapshot).contains("Updated Title");
+            assertThat(snapshot).contains("Updated Description");
         }
     }
 
@@ -334,7 +440,7 @@ class TodoServiceTest {
         void shouldToggleToComplete() {
             testTodo.setCompleted(false);
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
             when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             TodoResponse result = todoService.toggleTodoCompletion("testuser", 1L);
@@ -347,12 +453,54 @@ class TodoServiceTest {
         void shouldToggleToIncomplete() {
             testTodo.setCompleted(true);
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
             when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             TodoResponse result = todoService.toggleTodoCompletion("testuser", 1L);
 
             assertThat(result.getCompleted()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should create COMPLETED audit log entry when toggling to complete")
+        void shouldCreateCompletedAuditLogEntryOnToggleToComplete() throws Exception {
+            testTodo.setCompleted(false);
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            todoService.toggleTodoCompletion("testuser", 1L);
+
+            ArgumentCaptor<TodoAuditLog> auditLogCaptor = ArgumentCaptor.forClass(TodoAuditLog.class);
+            verify(todoAuditLogRepository).save(auditLogCaptor.capture());
+
+            TodoAuditLog savedAuditLog = auditLogCaptor.getValue();
+            assertThat(savedAuditLog.getActionType()).isEqualTo(TodoAuditActionType.COMPLETED);
+            assertThat(savedAuditLog.getCreatedBy()).isEqualTo("testuser");
+
+            String snapshot = savedAuditLog.getSnapshot();
+            assertThat(snapshot).contains("true"); // completed status
+        }
+
+        @Test
+        @DisplayName("should create UNCOMPLETED audit log entry when toggling to incomplete")
+        void shouldCreateUncompletedAuditLogEntryOnToggleToIncomplete() throws Exception {
+            testTodo.setCompleted(true);
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            todoService.toggleTodoCompletion("testuser", 1L);
+
+            ArgumentCaptor<TodoAuditLog> auditLogCaptor = ArgumentCaptor.forClass(TodoAuditLog.class);
+            verify(todoAuditLogRepository).save(auditLogCaptor.capture());
+
+            TodoAuditLog savedAuditLog = auditLogCaptor.getValue();
+            assertThat(savedAuditLog.getActionType()).isEqualTo(TodoAuditActionType.UNCOMPLETED);
+            assertThat(savedAuditLog.getCreatedBy()).isEqualTo("testuser");
+
+            String snapshot = savedAuditLog.getSnapshot();
+            assertThat(snapshot).contains("false"); // completed status
         }
     }
 
@@ -364,25 +512,47 @@ class TodoServiceTest {
         @DisplayName("should delete existing todo")
         void shouldDeleteExistingTodo() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testTodo));
-            doNothing().when(todoRepository).delete(testTodo);
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             todoService.deleteTodo("testuser", 1L);
 
-            verify(todoRepository).delete(testTodo);
+            verify(todoRepository).save(argThat(todo -> todo.getDeletedAt() != null));
         }
 
         @Test
         @DisplayName("should throw ResourceNotFoundException for non-existent todo")
         void shouldThrowForNonExistentTodoOnDelete() {
             when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-            when(todoRepository.findByIdAndUserId(999L, 1L)).thenReturn(Optional.empty());
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(999L, 1L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> todoService.deleteTodo("testuser", 999L))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Todo not found");
 
-            verify(todoRepository, never()).delete(any());
+            verify(todoRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should create DELETED audit log entry before soft delete")
+        void shouldCreateDeletedAuditLogEntryOnDelete() throws Exception {
+            when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+            when(todoRepository.findByIdAndUserIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(testTodo));
+            when(todoRepository.save(any(Todo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            todoService.deleteTodo("testuser", 1L);
+
+            ArgumentCaptor<TodoAuditLog> auditLogCaptor = ArgumentCaptor.forClass(TodoAuditLog.class);
+            verify(todoAuditLogRepository).save(auditLogCaptor.capture());
+
+            TodoAuditLog savedAuditLog = auditLogCaptor.getValue();
+            assertThat(savedAuditLog.getActionType()).isEqualTo(TodoAuditActionType.DELETED);
+            assertThat(savedAuditLog.getCreatedBy()).isEqualTo("testuser");
+            assertThat(savedAuditLog.getTodo()).isEqualTo(testTodo);
+
+            String snapshot = savedAuditLog.getSnapshot();
+            assertThat(snapshot).contains("Test Todo");
+            assertThat(snapshot).contains("Test Description");
         }
     }
 }
