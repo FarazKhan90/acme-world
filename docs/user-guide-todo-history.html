@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo History & Audit Trail - User Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #1e40af;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        h2 {
+            font-size: 1.75rem;
+            color: #1e40af;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        h3 {
+            font-size: 1.25rem;
+            color: #374151;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        .cover {
+            text-align: center;
+            padding: 60px 0;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #1e40af;
+        }
+        
+        .cover h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .cover .subtitle {
+            font-size: 1.5rem;
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+        
+        .cover .meta {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+        
+        .toc {
+            background: #f9fafb;
+            padding: 30px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        
+        .toc h2 {
+            margin-top: 0;
+            border-bottom: none;
+        }
+        
+        .toc ol {
+            margin-left: 20px;
+        }
+        
+        .toc li {
+            margin: 10px 0;
+        }
+        
+        .toc a {
+            color: #1e40af;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f3f4f6;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .screenshot {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            background: #f9fafb;
+            text-align: center;
+        }
+        
+        .screenshot img {
+            max-width: 100%;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .screenshot-placeholder {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 300px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        
+        .screenshot-caption {
+            margin-top: 10px;
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .badge-created { background: #10b981; }
+        .badge-updated { background: #3b82f6; }
+        .badge-completed { background: #8b5cf6; }
+        .badge-uncompleted { background: #f97316; }
+        .badge-deleted { background: #ef4444; }
+        
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .step {
+            background: #f3f4f6;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #1e40af;
+        }
+        
+        .step-number {
+            background: #1e40af;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .faq {
+            margin: 20px 0;
+        }
+        
+        .faq-q {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .faq-a {
+            margin-bottom: 25px;
+            padding-left: 20px;
+            border-left: 3px solid #e5e7eb;
+        }
+        
+        .quick-ref {
+            background: #f0fdf4;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid #e5e7eb;
+            color: #6b7280;
+        }
+        
+        @media print {
+            body {
+                padding: 20px;
+            }
+            
+            .screenshot-placeholder {
+                height: 200px;
+            }
+            
+            h2 {
+                page-break-after: avoid;
+            }
+            
+            .step, .screenshot {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cover">
+        <h1>Todo History & Audit Trail</h1>
+        <div class="subtitle">User Guide</div>
+        <div class="meta">
+            <p><strong>ACME Todo Application</strong></p>
+            <p>Version 1.0 | January 2026</p>
+            <p>Reference: KAN-28</p>
+        </div>
+    </div>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ol>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#getting-started">Getting Started</a></li>
+            <li><a href="#understanding">Understanding History Tracking</a></li>
+            <li><a href="#viewing">Viewing Todo History</a></li>
+            <li><a href="#entry-types">History Entry Types</a></li>
+            <li><a href="#faq">Frequently Asked Questions</a></li>
+        </ol>
+    </div>
+
+    <h2 id="overview">1. Overview</h2>
+    
+    <p>The <strong>Todo History & Audit Trail</strong> feature provides complete visibility into how your todos have changed over time. Every action you take on a todo—whether creating, editing, completing, or deleting—is automatically recorded and preserved for future reference.</p>
+
+    <h3>Key Benefits</h3>
+    <ul>
+        <li><strong>Full Transparency:</strong> See exactly what changed and when</li>
+        <li><strong>Accountability:</strong> Track all modifications with timestamps and user information</li>
+        <li><strong>Data Preservation:</strong> Deleted todos are soft-deleted, maintaining complete history</li>
+        <li><strong>Audit Compliance:</strong> Immutable records that cannot be altered or deleted</li>
+    </ul>
+
+    <h3>What Gets Tracked</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="badge badge-created">CREATED</span></td>
+                <td>Initial creation of a todo item</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-updated">UPDATED</span></td>
+                <td>Changes to title, description, priority, or due date</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-completed">COMPLETED</span></td>
+                <td>Todo marked as done</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-uncompleted">UNCOMPLETED</span></td>
+                <td>Completed todo reverted to active</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-deleted">DELETED</span></td>
+                <td>Todo removed from the active list</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2 id="getting-started">2. Getting Started</h2>
+
+    <h3>Prerequisites</h3>
+    <ul>
+        <li>You must be logged into the ACME Todo Application</li>
+        <li>You need at least one todo item to view history</li>
+    </ul>
+
+    <h3>Accessing the Todo List</h3>
+    <p>After logging in, you will see your main todo list with all active items:</p>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder">
+            📋 Main Todo List View<br>
+            <small>Replace with: screenshots/todo-list-main.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 1: Main todo list showing all your tasks with action buttons</div>
+    </div>
+
+    <p>Each todo item displays:</p>
+    <ul>
+        <li><strong>Checkbox:</strong> Mark the todo as complete/incomplete</li>
+        <li><strong>Title:</strong> The name of your task</li>
+        <li><strong>Priority Badge:</strong> HIGH (red), MEDIUM (yellow), or LOW (green)</li>
+        <li><strong>Due Date:</strong> Optional deadline for the task</li>
+        <li><strong>Action Buttons:</strong> History, Edit, and Delete controls</li>
+    </ul>
+
+    <h2 id="understanding">3. Understanding History Tracking</h2>
+
+    <h3>Automatic Tracking</h3>
+    <p>History tracking is <strong>completely automatic</strong>. You don't need to do anything special—every action you take on a todo is recorded behind the scenes.</p>
+
+    <h3>What Information is Saved</h3>
+    <p>Each history entry captures a <strong>complete snapshot</strong> of the todo at that moment in time:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Field</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Action Type</td><td>The type of change (CREATED, UPDATED, etc.)</td></tr>
+            <tr><td>Timestamp</td><td>Exact date and time of the action</td></tr>
+            <tr><td>User</td><td>Who made the change</td></tr>
+            <tr><td>Todo Title</td><td>The title at that moment</td></tr>
+            <tr><td>Description</td><td>The description at that moment</td></tr>
+            <tr><td>Priority</td><td>The priority level at that moment</td></tr>
+            <tr><td>Due Date</td><td>The due date at that moment</td></tr>
+            <tr><td>Completed Status</td><td>Whether it was completed</td></tr>
+        </tbody>
+    </table>
+
+    <div class="info-box">
+        <strong>ℹ️ Immutable Records</strong><br>
+        History records are <strong>permanent and immutable</strong>. Records cannot be edited or deleted, ensuring the integrity of your audit trail.
+    </div>
+
+    <h2 id="viewing">4. Viewing Todo History</h2>
+
+    <div class="step">
+        <span class="step-number">1</span>
+        <strong>Locate the History Button</strong>
+        <p>On each todo item in your list, look for the <strong>History</strong> button in the action buttons area.</p>
+    </div>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder">
+            🔘 History Button Location<br>
+            <small>Replace with: screenshots/history-button.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 2: The History button on a todo item</div>
+    </div>
+
+    <div class="step">
+        <span class="step-number">2</span>
+        <strong>Click the History Button</strong>
+        <p>Click the <strong>History</strong> button to open the history modal. This will display all recorded changes for that specific todo.</p>
+    </div>
+
+    <div class="step">
+        <span class="step-number">3</span>
+        <strong>Review the History</strong>
+        <p>The history modal displays entries in <strong>chronological order</strong> (newest first).</p>
+    </div>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder">
+            📜 Todo History Modal<br>
+            <small>Replace with: screenshots/history-modal.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 3: Todo History modal showing all changes</div>
+    </div>
+
+    <h3>Reading History Entries</h3>
+    <p>Each history entry shows:</p>
+    <ol>
+        <li><strong>Action Badge</strong> - Color-coded indicator of the action type</li>
+        <li><strong>Timestamp</strong> - When the action occurred (e.g., "Jan 18, 2026, 10:30 AM")</li>
+        <li><strong>Description</strong> - What happened (e.g., "Todo was created")</li>
+        <li><strong>User</strong> - Who performed the action (e.g., "by john.smith")</li>
+    </ol>
+
+    <div class="step">
+        <span class="step-number">4</span>
+        <strong>Close the Modal</strong>
+        <p>Click the <strong>X</strong> button or click outside the modal to close it and return to your todo list.</p>
+    </div>
+
+    <h2 id="entry-types">5. History Entry Types</h2>
+
+    <h3><span class="badge badge-created">CREATED</span></h3>
+    <p>Recorded when you add a new todo to your list.</p>
+    <p><strong>What's captured:</strong> Initial title, description, priority level, and due date</p>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder" style="height: 150px;">
+            🟢 CREATED Entry Example<br>
+            <small>Replace with: screenshots/entry-created.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 4: A CREATED history entry</div>
+    </div>
+
+    <h3><span class="badge badge-updated">UPDATED</span></h3>
+    <p>Recorded when you modify any field of an existing todo.</p>
+    <p><strong>Triggers:</strong> Changing the title, editing the description, modifying the priority, or updating the due date</p>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder" style="height: 150px;">
+            🔵 UPDATED Entry Example<br>
+            <small>Replace with: screenshots/entry-updated.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 5: An UPDATED history entry showing the new title</div>
+    </div>
+
+    <h3><span class="badge badge-completed">COMPLETED</span></h3>
+    <p>Recorded when you check the checkbox to mark a todo as done.</p>
+    <p><strong>What happens:</strong> Todo moves to completed state and the checkbox appears checked</p>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder" style="height: 150px;">
+            🟣 COMPLETED Entry Example<br>
+            <small>Replace with: screenshots/entry-completed.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 6: A COMPLETED history entry</div>
+    </div>
+
+    <h3><span class="badge badge-uncompleted">UNCOMPLETED</span></h3>
+    <p>Recorded when you uncheck a completed todo to make it active again.</p>
+    <p><strong>What happens:</strong> Todo returns to active state and the checkbox is unchecked</p>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder" style="height: 150px;">
+            🟠 UNCOMPLETED Entry Example<br>
+            <small>Replace with: screenshots/entry-uncompleted.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 7: An UNCOMPLETED history entry</div>
+    </div>
+
+    <h3><span class="badge badge-deleted">DELETED</span></h3>
+    <p>Recorded when you remove a todo from your list.</p>
+    
+    <div class="warning-box">
+        <strong>⚠️ Important:</strong> Deleted todos are <strong>soft-deleted</strong>, meaning the todo is removed from your active list but all history records are preserved in the system.
+    </div>
+
+    <div class="screenshot">
+        <div class="screenshot-placeholder" style="height: 150px;">
+            🔴 DELETED Entry Example<br>
+            <small>Replace with: screenshots/entry-deleted.png</small>
+        </div>
+        <div class="screenshot-caption">Figure 8: A DELETED history entry</div>
+    </div>
+
+    <h2 id="faq">6. Frequently Asked Questions</h2>
+
+    <div class="faq">
+        <div class="faq-q">Q: Can I undo changes using the history feature?</div>
+        <div class="faq-a">No, the history feature is for <strong>viewing</strong> past changes only. It does not support restoring previous versions. The history serves as an audit trail, not an undo mechanism.</div>
+
+        <div class="faq-q">Q: Who can see my todo history?</div>
+        <div class="faq-a">Only <strong>you</strong> can see the history of your todos. History entries are private and tied to your user account. Other users cannot access your todo history.</div>
+
+        <div class="faq-q">Q: Can I delete history entries?</div>
+        <div class="faq-a">No. History entries are <strong>immutable</strong> and cannot be deleted or modified. This ensures the integrity of the audit trail.</div>
+
+        <div class="faq-q">Q: How long is history kept?</div>
+        <div class="faq-a">History is kept <strong>indefinitely</strong>. There is no automatic cleanup or expiration of history records.</div>
+
+        <div class="faq-q">Q: What happens when I delete a todo?</div>
+        <div class="faq-a">When you delete a todo: (1) A DELETED history entry is created, (2) The todo is removed from your active list, (3) All history for that todo is preserved in the system. This is called a "soft delete."</div>
+
+        <div class="faq-q">Q: Can I search or filter history entries?</div>
+        <div class="faq-a">Currently, history entries cannot be filtered or searched. This feature may be added in a future update.</div>
+
+        <div class="faq-q">Q: Does history track who made changes?</div>
+        <div class="faq-a">Yes! Each history entry includes the username of the person who made the change. This appears as "by [username]" at the bottom of each entry.</div>
+
+        <div class="faq-q">Q: What if I make multiple changes quickly?</div>
+        <div class="faq-a">Each change is recorded separately. If you change the title and then the priority, you will see two separate UPDATED entries in the history.</div>
+    </div>
+
+    <div class="quick-ref">
+        <h3>Quick Reference</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Badge</th>
+                    <th>When It Happens</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CREATED</td>
+                    <td><span class="badge badge-created">🟢 Green</span></td>
+                    <td>New todo added</td>
+                </tr>
+                <tr>
+                    <td>UPDATED</td>
+                    <td><span class="badge badge-updated">🔵 Blue</span></td>
+                    <td>Any field changed</td>
+                </tr>
+                <tr>
+                    <td>COMPLETED</td>
+                    <td><span class="badge badge-completed">🟣 Purple</span></td>
+                    <td>Checkbox checked</td>
+                </tr>
+                <tr>
+                    <td>UNCOMPLETED</td>
+                    <td><span class="badge badge-uncompleted">🟠 Orange</span></td>
+                    <td>Checkbox unchecked</td>
+                </tr>
+                <tr>
+                    <td>DELETED</td>
+                    <td><span class="badge badge-deleted">🔴 Red</span></td>
+                    <td>Todo removed</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 ACME Corporation. All rights reserved.</p>
+        <p>Document Version 1.0 | Reference: KAN-28</p>
+        <p style="margin-top: 15px;"><small>For support, contact your system administrator</small></p>
+    </div>
+</body>
+</html>

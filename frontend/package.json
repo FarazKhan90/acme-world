@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "screenshots": "npx playwright test e2e/screenshots.spec.ts",
+    "screenshots:headed": "npx playwright test e2e/screenshots.spec.ts --headed"
   },
   "dependencies": {
     "axios": "^1.6.2",
@@ -16,6 +18,7 @@
     "react-router-dom": "^6.21.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
