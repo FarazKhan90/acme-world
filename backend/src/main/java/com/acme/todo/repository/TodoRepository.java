@@ -11,15 +11,21 @@ import java.util.Optional;
 @Repository
 public interface TodoRepository extends JpaRepository<Todo, Long> {
 
-    List<Todo> findByUserIdOrderByCreatedAtDesc(Long userId);
+    List<Todo> findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long userId);
 
-    List<Todo> findByUserIdAndCompletedOrderByCreatedAtDesc(Long userId, Boolean completed);
+    List<Todo> findByUserIdAndCompletedAndDeletedAtIsNullOrderByCreatedAtDesc(Long userId, Boolean completed);
 
-    List<Todo> findByUserIdAndPriorityOrderByCreatedAtDesc(Long userId, Priority priority);
+    List<Todo> findByUserIdAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(Long userId, Priority priority);
 
-    List<Todo> findByUserIdAndCompletedAndPriorityOrderByCreatedAtDesc(
+    List<Todo> findByUserIdAndCompletedAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(
             Long userId, Boolean completed, Priority priority);
 
+    Optional<Todo> findByIdAndUserIdAndDeletedAtIsNull(Long id, Long userId);
+
+    /**
+     * Find a todo by ID and user ID, including soft-deleted todos.
+     * Used for retrieving history of deleted todos.
+     */
     Optional<Todo> findByIdAndUserId(Long id, Long userId);
 
     void deleteByIdAndUserId(Long id, Long userId);

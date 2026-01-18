@@ -6,9 +6,10 @@ interface TodoItemProps {
   onToggle: () => void;
   onUpdate: (data: UpdateTodoRequest) => void;
   onDelete: () => void;
+  onHistoryClick: () => void;
 }
 
-export default function TodoItem({ todo, onToggle, onUpdate, onDelete }: TodoItemProps) {
+export default function TodoItem({ todo, onToggle, onUpdate, onDelete, onHistoryClick }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
 
@@ -90,6 +91,13 @@ export default function TodoItem({ todo, onToggle, onUpdate, onDelete }: TodoIte
             </div>
           </div>
           <div className="todo-actions">
+            <button
+              className="btn btn-small btn-secondary"
+              onClick={onHistoryClick}
+              title="View history"
+            >
+              History
+            </button>
             <button
               className="btn btn-small btn-secondary"
               onClick={() => setIsEditing(true)}

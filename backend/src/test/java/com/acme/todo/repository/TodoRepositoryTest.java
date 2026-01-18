@@ -95,7 +95,7 @@ class TodoRepositoryTest {
         Thread.sleep(10);
         Todo todo3 = createTodo("Third", Priority.HIGH, true);
 
-        List<Todo> todos = todoRepository.findByUserIdOrderByCreatedAtDesc(testUser.getId());
+        List<Todo> todos = todoRepository.findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(testUser.getId());
 
         assertThat(todos).hasSize(3);
         assertThat(todos.get(0).getTitle()).isEqualTo("Third");
@@ -110,8 +110,8 @@ class TodoRepositoryTest {
         createTodo("Incomplete 2", Priority.MEDIUM, false);
         createTodo("Complete", Priority.HIGH, true);
 
-        List<Todo> incomplete = todoRepository.findByUserIdAndCompletedOrderByCreatedAtDesc(testUser.getId(), false);
-        List<Todo> complete = todoRepository.findByUserIdAndCompletedOrderByCreatedAtDesc(testUser.getId(), true);
+        List<Todo> incomplete = todoRepository.findByUserIdAndCompletedAndDeletedAtIsNullOrderByCreatedAtDesc(testUser.getId(), false);
+        List<Todo> complete = todoRepository.findByUserIdAndCompletedAndDeletedAtIsNullOrderByCreatedAtDesc(testUser.getId(), true);
 
         assertThat(incomplete).hasSize(2);
         assertThat(complete).hasSize(1);
@@ -125,8 +125,8 @@ class TodoRepositoryTest {
         createTodo("High Priority 1", Priority.HIGH, false);
         createTodo("High Priority 2", Priority.HIGH, true);
 
-        List<Todo> highPriority = todoRepository.findByUserIdAndPriorityOrderByCreatedAtDesc(testUser.getId(), Priority.HIGH);
-        List<Todo> lowPriority = todoRepository.findByUserIdAndPriorityOrderByCreatedAtDesc(testUser.getId(), Priority.LOW);
+        List<Todo> highPriority = todoRepository.findByUserIdAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(testUser.getId(), Priority.HIGH);
+        List<Todo> lowPriority = todoRepository.findByUserIdAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(testUser.getId(), Priority.LOW);
 
         assertThat(highPriority).hasSize(2);
         assertThat(lowPriority).hasSize(1);
@@ -139,7 +139,7 @@ class TodoRepositoryTest {
         createTodo("High Incomplete", Priority.HIGH, false);
         createTodo("Low Complete", Priority.LOW, true);
 
-        List<Todo> highComplete = todoRepository.findByUserIdAndCompletedAndPriorityOrderByCreatedAtDesc(
+        List<Todo> highComplete = todoRepository.findByUserIdAndCompletedAndPriorityAndDeletedAtIsNullOrderByCreatedAtDesc(
                 testUser.getId(), true, Priority.HIGH);
 
         assertThat(highComplete).hasSize(1);
@@ -151,8 +151,8 @@ class TodoRepositoryTest {
     void shouldFindByIdAndUserId() {
         Todo todo = createTodo("My Todo", Priority.MEDIUM, false);
 
-        Optional<Todo> found = todoRepository.findByIdAndUserId(todo.getId(), testUser.getId());
-        Optional<Todo> notFound = todoRepository.findByIdAndUserId(todo.getId(), 99999L);
+        Optional<Todo> found = todoRepository.findByIdAndUserIdAndDeletedAtIsNull(todo.getId(), testUser.getId());
+        Optional<Todo> notFound = todoRepository.findByIdAndUserIdAndDeletedAtIsNull(todo.getId(), 99999L);
 
         assertThat(found).isPresent();
         assertThat(found.get().getTitle()).isEqualTo("My Todo");
@@ -180,8 +180,8 @@ class TodoRepositoryTest {
                 .build();
         todoRepository.save(otherTodo);
 
-        List<Todo> testUserTodos = todoRepository.findByUserIdOrderByCreatedAtDesc(testUser.getId());
-        List<Todo> otherUserTodos = todoRepository.findByUserIdOrderByCreatedAtDesc(otherUser.getId());
+        List<Todo> testUserTodos = todoRepository.findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(testUser.getId());
+        List<Todo> otherUserTodos = todoRepository.findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(otherUser.getId());
 
         assertThat(testUserTodos).hasSize(1);
         assertThat(testUserTodos.get(0).getTitle()).isEqualTo("Test User Todo");

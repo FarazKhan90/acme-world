@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-audit-log-table
+      author: acme-team
+      changes:
+        - createTable:
+            tableName: todo_audit_log
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: todo_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: snapshot
+                  type: JSONB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: todo_audit_log
+            baseColumnNames: todo_id
+            constraintName: fk_audit_todo
+            referencedTableName: todos
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: todo_audit_log
+            baseColumnNames: user_id
+            constraintName: fk_audit_user
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - sql:
+            sql: >
+              ALTER TABLE todo_audit_log ADD CONSTRAINT chk_action_type 
+              CHECK (action_type IN ('CREATED', 'UPDATED', 'COMPLETED', 'UNCOMPLETED', 'DELETED'))
+        - createIndex:
+            tableName: todo_audit_log
+            indexName: idx_audit_todo_created
+            columns:
+              - column:
+                  name: todo_id
+              - column:
+                  name: created_at
+                  descending: true
+        - createIndex:
+            tableName: todo_audit_log
+            indexName: idx_audit_user
+            columns:
+              - column:
+                  name: user_id
